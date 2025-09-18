@@ -1,0 +1,62 @@
+# -------------------------------
+# PYTHON / DJANGO
+# -------------------------------
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+db.sqlite3
+*.py,cover
+*.mo
+*.pot
+*.pyproj
+*.suo
+*.tmp
+*.swp
+*.bak
+*.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.hypothesis/
+.pytest_cache/
+local_settings.py
+
+# Django static and media
+staticfiles/
+media/
+
+# Virtual environments
+venv/
+.env
+.env.*
+
+# web
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+
+frontend/.vscode/*
+frontend/!.vscode/extensions.json
+frontend/.idea
+frontend/.DS_Store
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
+frontend/.history/
+frontend/.cache/
