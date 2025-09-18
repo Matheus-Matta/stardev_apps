@@ -60,3 +60,10 @@ frontend/*.sln
 frontend/*.sw?
 frontend/.history/
 frontend/.cache/
+
+# Migrations
+*/migrations/*.py
+*migrations/*.py
+*/migrations*.py
+*migrations*.py
+
