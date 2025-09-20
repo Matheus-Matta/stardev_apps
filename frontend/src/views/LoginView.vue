@@ -91,6 +91,7 @@ async function submit() {
             v-model="email"
             type="email"
             label="Email"
+            leftIcon="mail"
             placeholder="example@companyname.com"
             :message="emailMessage"
             :messageType="emailType"
@@ -103,6 +104,7 @@ async function submit() {
             v-model="password"
             type="password"
             label="Password"
+            leftIcon="lock"
             placeholder="••••••••"
             :message="passwordMessage"
             :messageType="passwordType"
@@ -125,6 +127,7 @@ async function submit() {
             label="Login"
             color="blue"
             variant="solid"
+            extraClass="w-full"
             size="lg"
             block
           />

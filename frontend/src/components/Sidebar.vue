@@ -4,7 +4,9 @@ import SidebarSeparator from "./nav/SidebarSeparator.vue";
 import SidebarGroup from "./nav/SidebarGroup.vue";
 
 const props = defineProps({
-  open: { type: Boolean, default: false }, // controla drawer no mobile
+  open:    { type: Boolean, default: false },
+  user:    { type: Object,  default: () => ({}) },
+  account: { type: [String, Object, null], default: null },
 });
 const emit = defineEmits(["close"]);
 </script>

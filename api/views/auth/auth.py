@@ -16,14 +16,15 @@ from django.contrib.auth import get_user_model
 
 from core.serialize import serialize_model
 
+
 class LoginView(TokenObtainPairView):
     """
     Espera: { "email": "...", "password": "..." }
-    Retorna: { "data": { "user": {...}, "tokens": {...} } }
+    Retorna: { "data": { "user": {...}, "account": {...}, "tokens": {...} }, "detail": "..." }
     """
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "auth:login"
+    throttle_scope = "user:5minutes"
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     def post(self, request, *args, **kwargs):
@@ -36,7 +37,7 @@ class LoginView(TokenObtainPairView):
             password = data.get("password")
             if not email or not password:
                 return Response(
-                    {"data": {"ok": False, "detail": "Campos 'email' e 'password' são obrigatórios."}},
+                    {"ok": False, "detail": "Campos 'email' e 'password' são obrigatórios."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -44,7 +45,7 @@ class LoginView(TokenObtainPairView):
             user = User.objects.filter(email__iexact=email).first()
             if not user or not user.is_active or not user.check_password(password):
                 return Response(
-                    {"data": {"ok": False, "detail": "Credenciais inválidas."}},
+                    {"ok": False, "detail": "Credenciais inválidas."},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 
@@ -53,21 +54,26 @@ class LoginView(TokenObtainPairView):
                 "username": getattr(user, username_field, None) or getattr(user, "username", ""),
                 "password": password,
             })
-            
             ser.is_valid(raise_exception=True)
             tokens = ser.validated_data
 
             user_data = serialize_model(user, request=request)
+            user_data['avatar_url'] = user.avatar_url or None
+            account = getattr(user, "Account", None)
+            account_data = serialize_model(account, request=request) if account else None
 
-            return Response({"data": {"user": user_data, "tokens": tokens}}, status=status.HTTP_200_OK)
+            return Response(
+                {"user": user_data, "account": account_data, "tokens": tokens, "detail": "Autenticado com sucesso"},
+                status=status.HTTP_200_OK
+            )
 
         except ValidationError as exc:
             detail = exc.detail if isinstance(exc.detail, dict) else {"detail": exc.detail}
-            return Response({"data": {"ok": False, **detail}}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"ok": False, **detail}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             print("LoginView error:", repr(e))
             return Response(
-                {"data": {"ok": False, "detail": "Erro ao autenticar."}},
+                {"ok": False, "detail": "Erro ao autenticar."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -78,21 +84,23 @@ class LogoutView(APIView):
     Coloca o refresh em blacklist.
     """
     permission_classes = [AllowAny]
-
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "user:5minutes"
+    
     def post(self, request):
         refresh = request.data.get("refresh")
         if not refresh:
             return Response(
-                {"data": {"ok": False, "detail": "Campo 'refresh' é obrigatório."}},
+                {"ok": False, "detail": "Campo 'refresh' é obrigatório."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
             token = RefreshToken(refresh)
             token.blacklist()
-            return Response({"data": {"ok": True}}, status=status.HTTP_205_RESET_CONTENT)
+            return Response({"ok": True, "detail": "Logout efetuado com sucesso"}, status=status.HTTP_205_RESET_CONTENT)
         except Exception:
             return Response(
-                {"data": {"ok": False, "detail": "Refresh token inválido."}},
+                {"ok": False, "detail": "Refresh token inválido."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -100,15 +108,17 @@ class LogoutView(APIView):
 class VerifyView(TokenVerifyView):
     """
     Espera: { "token": "<access_ou_refresh>" }
-    Retorna: { "data": {"valid": true|false} }
+    Retorna: { "valid": true|false }
     """
     permission_classes = [AllowAny]
-
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "user:5minutes"
+    
     def post(self, request, *args, **kwargs):
         try:
             s = self.get_serializer(data=request.data)
             s.is_valid(raise_exception=True)
-            return Response({"data": {"valid": True}}, status=status.HTTP_200_OK)
+            return Response({"valid": True}, status=status.HTTP_200_OK)
         except ValidationError as exc:
             detail = exc.detail if isinstance(exc.detail, dict) else {"detail": exc.detail}
-            return Response({"data": {"valid": False, **detail}}),
+            return Response({"valid": False, **detail}, status=status.HTTP_401_UNAUTHORIZED)

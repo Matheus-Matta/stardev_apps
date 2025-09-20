@@ -51,9 +51,12 @@
                     d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
             </svg>
           </button>
-
+          
+          <!-- Toggle de tema -->
+          <ThemeToggle />
+          
           <!-- User menu -->
-          <UserMenu :user="user" @logout="logout" />
+          <UserMenu @logout="logout" />
         </div>
       </div>
 
@@ -70,9 +73,10 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import NavBrand from "./nav/NavBrand.vue";
 import NavSearch from "./nav/NavSearch.vue";
+import ThemeToggle from "./nav/ThemeToggle.vue";
 import UserMenu from "./nav/UserMenu.vue";
-import { useAuthStore } from "../store/auth";
 
+import { useAuthStore } from "../store/auth";
 defineEmits(["toggle-sidebar"]);
 
 const router = useRouter();

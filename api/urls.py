@@ -1,10 +1,14 @@
 from django.urls import path
-from .views import LoginView, LogoutView, VerifyView, GetView
+from .views import LoginView, LogoutView, VerifyView, GetView, PostView, PutView, DeleteView, ChangePasswordView
 
 urlpatterns = [
     path("auth/login",  LoginView.as_view(),  name="auth_login"),
     path("auth/logout", LogoutView.as_view(), name="auth_logout"),
     path("auth/verify", VerifyView.as_view(), name="auth_verify"),
-
-    path("<str:model_name>/<int:pk>", GetView.as_view(), name="get")
+    path("auth/change-password", ChangePasswordView.as_view(), name="auth-change-password"),
+    
+    path("<str:model_name>/add",              PostView.as_view(), name="post"),               # POST   /api/<model>
+    path("<str:model_name>/<uuid:pk>",        GetView.as_view(),  name="get"),                # GET    /api/<model>/<pk>
+    path("<str:model_name>/<uuid:pk>/update", PutView.as_view(),  name="put"),                # PUT    /api/<model>/<pk>
+    path("<str:model_name>/<uuid:pk>/delete", DeleteView.as_view(), name="delete"),           # DELETE /api/<model>/<pk>
 ]

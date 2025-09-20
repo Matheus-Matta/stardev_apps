@@ -1,6 +1,7 @@
 # account/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.html import format_html
 
 from .models import (
     Account, AccountModule,
@@ -8,7 +9,8 @@ from .models import (
     User,
     Customer, CustomerAddress, CustomerContact,
     Address,
-    Contact
+    Contact,
+    Files
 )
 
 # ------------------- Account -------------------
@@ -36,10 +38,12 @@ class UserAdmin(BaseUserAdmin):
     # Adiciona campos extras ao form do admin
     fieldsets = BaseUserAdmin.fieldsets + (
         ("Account Info", {"fields": ("Account", "display_name")}),
+        ("Avatar Info", {"fields": ("avatar",)}),
     )
+
     # Colunas
-    list_display = ("username", "email", "Account", "is_active", "is_staff")
-    list_filter = ("Account", "is_active", "is_staff", "is_superuser")
+    list_display = ("username", "email", "Account", "is_active", "is_staff", "avatar")
+    list_filter = ("Account", "is_active", "is_staff", "is_superuser", "avatar")
     search_fields = ("username", "email", "Account__slug", "Account__display_name")
     ordering = ("Account__slug", "username")
 
@@ -179,3 +183,14 @@ class CustomerContactAdmin(admin.ModelAdmin):
     search_fields = ("customer__full_name", "contact__value")
     autocomplete_fields = ("customer", "contact")
     readonly_fields = ("created_at", "updated_at")
+
+@admin.register(Files)
+class FilesAdmin(admin.ModelAdmin):
+    list_display = ("label", "Account", "original_name", "created_at")
+    search_fields = ("label", "original_name", "Account__slug", "Account__id")
+    list_filter = ("Account",)
+    readonly_fields = ("created_at", "updated_at", "preview_url")
+
+    def preview_url(self, obj):
+        return obj.url
+    preview_url.short_description = "URL"

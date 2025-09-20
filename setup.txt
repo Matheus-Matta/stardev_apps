@@ -4,7 +4,7 @@ python -m pip install -U pip
 pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
-cp ./env.example .env
+cp .\.env.example .env
 python manage.py runserver
 
 # frontend

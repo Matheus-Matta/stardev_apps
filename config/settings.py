@@ -12,10 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import environ
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 env = environ.Env()
 
 environ.Env.read_env(BASE_DIR / ".env")
@@ -28,6 +28,8 @@ SECRET_KEY = env("DJANGO_SECRET", default="django-insecure-3zg2dkcu2^7x+wdq)(**w
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DJANGO_DEBUG", default=True)
+
+BASE_URL = env("BASE_URL", default="http://localhost:8000")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["*"])
 
@@ -153,29 +155,42 @@ else:
     }
 
 REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
+        "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
-        "rest_framework.throttling.ScopedRateThrottle",
+        "core.throttling.AccountRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "50/hour",
-        "user": "2000/day",
-        "auth:login": "10/min",
+ # ---- janelas por USER Limite MENOR ----
+        "user:1minute": "5/minute",
+        "user:5minutes": "25/minute",
+        "user:10minutes": "50/minute",
+        "user:15minutes": "100/minute",
+        "user:30minutes": "200/minute",
+        "user:1hour": "600/hour",
+        "user:1day": "2000/day",
+ # ---- janelas por ACCOUNT Limite MAIOR ----
+        "account:1minute": "100/minute",
+        "account:5minutes": "500/minute",
+        "account:10minutes": "1000/minute",
+        "account:15minutes": "1500/minute",
+        "account:30minutes": "3000/minute",
+        "account:1hour": "10000/hour",
+        "account:1day": "60000/day",
     },
 }
+
 
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
@@ -191,3 +206,6 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API base stardev",
     "VERSION": "0.1.0",
 }
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")

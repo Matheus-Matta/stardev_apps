@@ -1,2 +1,3 @@
 from .auth.auth import LoginView, LogoutView, VerifyView
-from .GetView  import GetView
+from .auth.change_password import ChangePasswordView
+from .GenericView  import GetView, PostView, PutView, DeleteView
