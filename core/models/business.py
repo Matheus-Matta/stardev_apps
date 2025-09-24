@@ -2,7 +2,8 @@
 import uuid
 from django.db import models
 from django.utils import timezone
-from .account import Account   # importamos o Account já criado
+from .account import Account
+from .address import Address
 from auditlog.registry import auditlog
 
 class BusinessType(models.TextChoices):
@@ -20,11 +21,12 @@ class Business(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="businesses")
+    address = models.ForeignKey(Address, null=True, blank=True, on_delete=models.SET_NULL, related_name="businesses")
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
-
+    
     code = models.CharField(max_length=80)
     name = models.CharField(max_length=255)
-    cnpj = models.CharField(max_length=18, unique=True)  # formato 00.000.000/0000-00
+    cnpj = models.CharField(max_length=18, unique=True)
 
     business_type = models.CharField(max_length=20, choices=BusinessType.choices)
     address_json = models.JSONField(default=dict)

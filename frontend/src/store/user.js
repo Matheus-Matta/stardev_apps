@@ -54,6 +54,28 @@ export const useUserStore = defineStore("user", {
       this.persist();
     },
 
+    async fetch({ force = false } = {}) {
+      if (!force && this.user && !this.isStale && this.user.id === id) {
+        return this.user;
+      }
+      this.loading = true;
+      this.error = null;
+      if (!this.user && !this.user.id) return this.user;
+      try {
+        const resp = await api.get(`api/${KEY}/${this.user.id}`);
+        const user = unwrapData(resp)?.user ?? unwrapData(resp);
+        if (!user?.id) throw new Error("Usuário não encontrado");
+        this.setOne(user);
+        return user;
+      } catch (e) {
+        this.error =
+          e?.response?.data?.detail || e?.message || "Falha ao buscar usuário";
+        throw e;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchById(id, { force = false } = {}) {
       if (!force && this.user && !this.isStale && this.user.id === id) {
         return this.user;
@@ -182,6 +204,22 @@ export const useUserStore = defineStore("user", {
         this.loading = false;
       }
     },
-  },
 
+    hasPermissions(required = [], { mode = "all" } = {}) {
+      if (!this.user || !Array.isArray(this.user.group_permissions)) {
+        return false;
+      }
+      
+      if(this.user.is_superuser) return true;
+
+      const perms = this.user.group_permissions;
+      if (mode === "all") return required.every(p => perms.includes(p));
+      if (mode === "any") return required.some(p => perms.includes(p));
+      return false;
+    },
+
+    hasPermission(p) {
+      return this.hasPermissions([p], { mode: "all" });
+    },
+  },
 });

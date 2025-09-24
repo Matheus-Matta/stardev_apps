@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import LoginView, LogoutView, VerifyView, GetView, PostView, PutView, DeleteView, ChangePasswordView
+from .views import LoginView, LogoutView, VerifyView, GetView, PostView, PutView, DeleteView, ChangePasswordView, ListView
 
 urlpatterns = [
     path("auth/login",  LoginView.as_view(),  name="auth_login"),
@@ -7,8 +7,12 @@ urlpatterns = [
     path("auth/verify", VerifyView.as_view(), name="auth_verify"),
     path("auth/change-password", ChangePasswordView.as_view(), name="auth-change-password"),
     
-    path("<str:model_name>/add",              PostView.as_view(), name="post"),               # POST   /api/<model>
-    path("<str:model_name>/<uuid:pk>",        GetView.as_view(),  name="get"),                # GET    /api/<model>/<pk>
-    path("<str:model_name>/<uuid:pk>/update", PutView.as_view(),  name="put"),                # PUT    /api/<model>/<pk>
-    path("<str:model_name>/<uuid:pk>/delete", DeleteView.as_view(), name="delete"),           # DELETE /api/<model>/<pk>
+    # PLURAL: listagem com filtros
+    path("<str:model_name_plural>", ListView.as_view(), name="list"),
+
+    # CRUD unitário
+    path("<str:model_name>/add",              PostView.as_view(), name="post"),
+    path("<str:model_name>/<uuid:pk>",        GetView.as_view(),  name="get"),
+    path("<str:model_name>/<uuid:pk>/update", PutView.as_view(),  name="put"),
+    path("<str:model_name>/<uuid:pk>/delete", DeleteView.as_view(), name="delete"),
 ]

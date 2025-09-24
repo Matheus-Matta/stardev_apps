@@ -37,7 +37,7 @@ function select(key) {
       class="lg:col-span-2 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
     >
       <ul class="p-2">
-        <li v-for="it in items" :key="it.key">
+        <li v-for="it in items" :key="it.key" class="mb-2">
           <button
             type="button"
             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium

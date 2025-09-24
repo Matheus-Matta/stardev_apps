@@ -5,6 +5,7 @@ import { FwbButton } from "flowbite-vue";
 import Avatar from "../ui/Avatar.vue";
 import Field from "../ui/Field.vue";
 import Icon from "../ui/Icon.vue";
+import EditActions from "../ui/EditActions.vue";
 
 import { useUserStore } from "../../store/user";
 import { useAuthStore } from "../../store/auth";
@@ -94,6 +95,7 @@ function cancelEditInfo() {
   Object.assign(form, original.value);
   editingInfo.value = false;
 }
+
 async function saveInfo() {
   const id = currentUser.value && currentUser.value.id;
   if (!id) return;
@@ -177,34 +179,13 @@ const iconMap = {
 };
 
 const fields = [
-  {
-    key: "display_name",
-    label: "Display Name",
-    placeholder: "Nome de exibição",
-    type: "text",
-  },
-  { key: "username", label: "Username", placeholder: "Usuário", type: "text" },
-  { key: "first_name", label: "First Name", placeholder: "Seu nome", type: "text" },
-  {
-    key: "last_name",
-    label: "Last Name",
-    placeholder: "Seu sobrenome",
-    type: "text",
-  },
-  {
-    key: "email",
-    label: "Email address",
-    placeholder: "email@exemplo.com",
-    type: "email",
-  },
-  { key: "phone", label: "Phone", placeholder: "+55 00 00000-0000", type: "text" },
-  {
-    key: "bio",
-    label: "Bio",
-    placeholder: "Breve descrição",
-    type: "text",
-    colSpan: 2,
-  },
+  { key: "display_name", type: "text" },
+  { key: "username", type: "text" },
+  { key: "first_name", type: "text" },
+  { key: "last_name", type: "text" },
+  { key: "email", type: "email" },
+  { key: "phone", type: "text" },
+  { key: "bio", type: "text", colSpan: 2 },
 ];
 </script>
 
@@ -218,14 +199,12 @@ const fields = [
 
       <div class="-mt-12 px-6 pb-6 pt-0">
         <div class="flex flex-col items-center text-center gap-4">
-          <div class="ring-4 ring-white dark:ring-gray-800 rounded-full">
-            <Avatar
-              :src="avatarPreview || form.avatar"
-              :displayName="form.display_name"
-              :username="form.username"
-              size="28"
-            />
-          </div>
+          <Avatar
+            :src="avatarPreview || form.avatar"
+            :displayName="form.display_name"
+            :username="form.username"
+            size="28"
+          />
 
           <div class="space-y-1">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
@@ -236,7 +215,6 @@ const fields = [
             </p>
           </div>
 
-          <!-- ação: alterar foto -->
           <div class="flex items-center gap-3">
             <input
               ref="fileInput"
@@ -259,7 +237,6 @@ const fields = [
             </FwbButton>
           </div>
 
-          <!-- meta info -->
           <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
             <div class="flex items-center gap-1">
               <Icon name="event" class="opacity-70" />
@@ -287,46 +264,18 @@ const fields = [
           </p>
         </div>
 
-        <div class="flex gap-2">
-          <FwbButton
-            v-if="!editingInfo"
-            size="sm"
-            color="light"
-            class="flex items-center gap-2 cursor-pointer hover:dark:bg-gray-700 hover:bg-gray-200 rounded-xl"
-            @click="startEditInfo"
-          >
-            <Icon name="edit" size="14px" />
-            Editar
-          </FwbButton>
-
-          <template v-else>
-            <FwbButton
-              size="sm"
-              color="light"
-              :disabled="savingInfo"
-              @click="cancelEditInfo"
-              class="flex items-center gap-2 cursor-pointer hover:dark:bg-gray-700 hover:bg-gray-200 rounded-xl"
-            >
-              <Icon name="close" size="14px" />
-              Cancelar
-            </FwbButton>
-            <FwbButton
-              size="sm"
-              color="green"
-              :disabled="savingInfo"
-              @click="saveInfo"
-              class="flex items-center gap-2 cursor-pointer hover:bg-green-700 rounded-xl"
-            >
-              <Icon name="check" size="14px" />
-              Salvar
-            </FwbButton>
-          </template>
-        </div>
+        <EditActions
+          :editing="editingInfo"
+          :saving="savingInfo"
+          form="profile-form"            
+          @edit="startEditInfo"
+          @cancel="cancelEditInfo"
+          @save=""                       
+        />
       </div>
 
       <!-- formulário -->
-      <div class="px-6 py-5">
-        <!-- se quiser separar seções, use subtítulos -->
+      <form id="profile-form" class="px-6 py-5" @submit.prevent="saveInfo">
         <div class="space-y-6">
           <!-- bloco 1: identidade -->
           <div>
@@ -335,11 +284,9 @@ const fields = [
             </h4>
             <div class="grid gap-3 sm:grid-cols-2">
               <Field
-                v-for="f in fields.slice(0, 2)"  
+                v-for="f in fields.slice(0, 2)"
                 :key="f.key"
-                :label="f.label"
-                :icon="iconMap[f.key]"
-                :placeholder="f.placeholder"
+                :name="f.key"         
                 :type="f.type"
                 :editing="editingInfo"
                 v-model="form[f.key]"
@@ -354,11 +301,9 @@ const fields = [
             </h4>
             <div class="grid gap-3 sm:grid-cols-2">
               <Field
-                v-for="f in fields.slice(2, 6)"  
+                v-for="f in fields.slice(2, 6)"
                 :key="f.key"
-                :label="f.label"
-                :icon="iconMap[f.key]"
-                :placeholder="f.placeholder"
+                :name="f.key"
                 :type="f.type"
                 :editing="editingInfo"
                 v-model="form[f.key]"
@@ -373,11 +318,9 @@ const fields = [
             </h4>
             <div class="grid gap-3">
               <Field
-                v-for="f in fields.slice(6)"  
+                v-for="f in fields.slice(6)"
                 :key="f.key"
-                :label="f.label"
-                :icon="iconMap[f.key]"
-                :placeholder="f.placeholder"
+                :name="f.key"
                 :type="f.type"
                 :editing="editingInfo"
                 v-model="form[f.key]"
@@ -395,7 +338,7 @@ const fields = [
           </div>
           <div v-if="savingInfo" class="animate-pulse">Salvando…</div>
         </div>
-      </div>
+      </form>
     </div>
 
   </div>

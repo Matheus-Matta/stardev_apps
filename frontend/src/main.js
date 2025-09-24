@@ -6,6 +6,8 @@ import router from "./router";
 import 'material-icons/iconfont/material-icons.css'
 import "./style.css";    
 import "flowbite";
+import 'flowbite';
+import 'flowbite-datepicker';
 import { initFlowbite } from "flowbite";
 
 const app = createApp(App);

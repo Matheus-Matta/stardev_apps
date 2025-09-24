@@ -1,4 +1,4 @@
-<template>
+<template class="custom-scroll">
   <router-view />
   <ToastContainer />
 </template>

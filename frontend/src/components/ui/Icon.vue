@@ -1,4 +1,4 @@
-<template>
+ <template>
   <span :class="[iconClass, noPropsClass, customClass]">
     {{ name }}
   </span>
