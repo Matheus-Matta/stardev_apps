@@ -1,0 +1,21 @@
+{
+  "email": {
+    "label": "E-mail",
+    "placeholder": "voce@exemplo.com"
+  },
+  "password": {
+    "label": "Senha",
+    "placeholder": "••••••••"
+  },
+  "rememberMe": "Lembrar de mim",
+  "forgotPassword": "Esqueceu a senha?",
+  "submit": {
+    "signIn": "Entrar",
+    "signingIn": "Entrando…"
+  },
+  "errors": {
+    "required": "Campo obrigatório",
+    "email": "E-mail inválido",
+    "minLength": "Mínimo de {n} caracteres"
+  }
+}

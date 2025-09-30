@@ -27,6 +27,8 @@ class Address(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     place_id = models.CharField(max_length=128, blank=True, null=True)
     geohash = models.CharField(max_length=16, blank=True, null=True)
+    
+    address_json = models.JSONField(default=dict, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

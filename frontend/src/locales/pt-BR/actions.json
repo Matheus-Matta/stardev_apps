@@ -1,0 +1,13 @@
+{
+  "bulk_delete": {
+    "name": "Excluir selecionados",
+    "title": "Remover {count} item(s)?",
+    "icon": "delete",
+    "run_action_title": "Executar \"{action}\" em {count} item(s)?",
+    "effect_explain_line1": "Se você remover, isso poderá excluir permanentemente os dados desses itens.",
+    "effect_explain_line2": "Esta ação não poderá ser desfeita.",
+    "small_notice": "Revise antes de confirmar.",
+    "yes_delete": "Sim, excluir",
+    "yes_run": "Sim, executar"
+  }
+}

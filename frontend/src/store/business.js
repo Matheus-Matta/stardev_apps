@@ -7,14 +7,14 @@ const LS_KEY = "business";
 
 export const useBusinessStore = defineStore("business", {
   state: () => ({
-    byId: {},            // { [id]: business }
-    items: [],           // última listagem carregada
-    count: 0,            // total da última listagem
+    byId: {},            
+    items: [],           
+    count: 0,           
     updatedAt: null,
     loading: false,
     error: null,
-    ttlMs: 5 * 60 * 1000, // 5 min
-    lastListParams: null, // memoriza últimos params usados na list
+    ttlMs: 5 * 60 * 1000, 
+    lastListParams: null, 
   }),
 
   getters: {
@@ -22,12 +22,10 @@ export const useBusinessStore = defineStore("business", {
       if (!s.updatedAt) return true;
       return Date.now() - s.updatedAt > s.ttlMs;
     },
-    // getter opcional para obter árvore da última listagem
     tree: (s) => buildTree(s.items),
   },
 
   actions: {
-    // ---------- Persistência local (opcional) ----------
     hydrate() {
       try {
         const raw = localStorage.getItem(LS_KEY);
@@ -53,7 +51,6 @@ export const useBusinessStore = defineStore("business", {
       } catch {}
     },
 
-    // ---------- Helpers internos ----------
     _setMany(list = []) {
       this.items = list;
       this.count = typeof this.count === "number" ? this.count : list.length;
@@ -66,7 +63,6 @@ export const useBusinessStore = defineStore("business", {
       if (!business?.id) return;
       this.byId = { ...this.byId, [business.id]: business };
 
-      // atualiza items se ele existir lá
       const idx = this.items.findIndex((x) => x.id === business.id);
       if (idx >= 0) {
         const clone = this.items.slice();
@@ -87,9 +83,7 @@ export const useBusinessStore = defineStore("business", {
       this.persist();
     },
 
-    // ---------- CRUD remoto ----------
     async fetchById(id, { force = false } = {}) {
-      if (!id) throw new Error("id é obrigatório.");
       if (!force && this.byId[id]) return this.byId[id];
 
       this.loading = true;

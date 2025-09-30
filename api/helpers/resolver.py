@@ -1,28 +1,13 @@
 # api/helpers/resolver.py
-"""
-Responsável por:
-- Resolver Model por nome (com ou sem app_label)
-- Descobrir o ModelForm associado
-- Detectar o campo de Account (FK) no model
-- Detectar se o model é a própria Account
-"""
-
 from typing import Optional, Type
 from django.apps import apps as django_apps
-from django.forms import ModelForm
-from django.forms import models as model_forms
-from django.utils.module_loading import import_string
 from django.db.models import Model, ForeignKey
-
+from django.utils.module_loading import import_string
 
 class ModelResolver:
-    """Resolve modelos, forms e metadados necessários para as operações."""
+    """Resolve modelos, serializers e metadados necessários para as operações."""
 
     def resolve_model(self, model_name: str) -> Optional[Type[Model]]:
-        """
-        Retorna a classe do Model a partir de `model_name`.
-        Aceita "app.Model" ou apenas "Model" (faz scan em todos os apps).
-        """
         name = (model_name or "").strip()
         if not name:
             return None
@@ -37,23 +22,16 @@ class ModelResolver:
                 return m
         return None
 
-    def resolve_form_for_model(self, model_cls: Type[Model]) -> Type[ModelForm]:
-        """
-        Tenta carregar <app>.forms.<ModelName>Form; senão cria um ModelForm com fields='__all__'.
-        """
+    def resolve_serializer_for_model(self, model_cls: Type[Model]):
+        """Tenta carregar <app_label>.serializers.<ModelName>Serializer"""
         app_label = model_cls._meta.app_label
-        form_class_path = f"{app_label}.forms.{model_cls.__name__}Form"
+        path = f"{app_label}.serializers.{model_cls.__name__}Serializer"
         try:
-            return import_string(form_class_path)
+            return import_string(path)
         except Exception:
-            return model_forms.modelform_factory(model=model_cls, fields="__all__")
+            return None
 
     def find_account_fk_field(self, model_cls: Type[Model]) -> Optional[str]:
-        """
-        Detecta o campo FK que referencia Account. Procura por nomes comuns
-        ('Account', 'account', 'tenant', 'Tenant') e por referência real à model Account.
-        """
-        # 1) candidatos por nome
         for candidate in ("Account", "account", "tenant", "Tenant"):
             try:
                 field = model_cls._meta.get_field(candidate)
@@ -62,7 +40,6 @@ class ModelResolver:
             except Exception:
                 pass
 
-        # 2) referência concreta à model Account (quando possível)
         try:
             AccountModel = (
                 django_apps.get_model("core", "Account")
@@ -79,9 +56,6 @@ class ModelResolver:
         return None
 
     def is_account_model(self, model_cls: Type[Model]) -> bool:
-        """
-        True se o `model_cls` for Account (independente do app_label).
-        """
         try:
             if model_cls.__name__.lower() == "account":
                 return True

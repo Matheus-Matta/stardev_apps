@@ -13,6 +13,14 @@ from .models import (
     Files
 )
 
+def _is_uuid(s: str) -> bool:
+    from uuid import UUID
+    try:
+        UUID(s)
+        return True
+    except Exception:
+        return False
+    
 # ------------------- Account -------------------
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
@@ -31,7 +39,17 @@ class BusinessAdmin(admin.ModelAdmin):
     list_filter = ("business_type", "is_active", "Account")
     ordering = ("Account__slug", "code")
 
-
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        # Suporta ?Account=<slug> além de ?Account=<uuid>
+        acc = request.GET.get('Account') or request.GET.get('account')
+        if acc and not _is_uuid(acc):
+            try:
+                initial['Account'] = str(Account.objects.only('id').get(slug=acc).pk)
+            except Account.DoesNotExist:
+                pass
+        return initial
+    
 # ------------------- User -------------------
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):

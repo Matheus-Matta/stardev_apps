@@ -15,7 +15,7 @@ from rest_framework import status
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.exceptions import ValidationError
 from django.core.exceptions import PermissionDenied
-
+from api.helpers.errors import ErrorBuilder
 from api.helpers import ModelHelper
 from api.permissions import require_model_permission
 from core.throttling import AccountScopedRateThrottle
@@ -77,6 +77,7 @@ class BaseModelView(APIView):
 
     def extract_payload(self, request) -> Dict[str, Any]:
         """Extrai o payload do request.data."""
+        print(request.data)
         return request.data if isinstance(request.data, dict) else {}
 
     def wrap_serialized(self, serialized: Dict[str, Any], model_name: str, pk: Optional[str] = None) -> Dict[str, Any]:
@@ -104,21 +105,19 @@ class BaseModelView(APIView):
         )
 
     def exec_with_errors(self, fn, *args, **kwargs) -> Response | Any:
-        """
-        Executa uma função do fluxo principal e converte exceções em respostas DRF.
-        - ValidationError: retorna exatamente o payload (dict) ou detail/400
-        - PermissionDenied: 403
-        - Exception: 400 genérico com 'errors'
-        """
         try:
             return fn(*args, **kwargs)
         except PermissionDenied as e:
             return self.forbidden(str(e))
         except ValidationError as e:
-            detail = getattr(e, "detail", str(e))
-            if isinstance(detail, dict):
+            detail = getattr(e, "detail", None)
+
+            if isinstance(detail, dict) and "ok" in detail and "errors" in detail:
                 return Response(detail, status=status.HTTP_400_BAD_REQUEST)
-            return self.fail(str(detail))
+
+            builder = ErrorBuilder()
+            payload = builder.build_payload_from_drf(detail or str(e), default_detail="Dados inválidos.")
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
-            # fallback: mantém compatibilidade com seu formato
             return self.fail("Erro ao processar a requisição.", extra={"errors": str(e)})

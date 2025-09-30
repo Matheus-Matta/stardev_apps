@@ -6,4 +6,5 @@ class CoreConfig(AppConfig):
     name = 'core'
     
     def ready(self):
-        from .signals import seed_initial  # noqa: F401
+        from .signals import seed_initial
+        from .signals import enforce_same_account_group

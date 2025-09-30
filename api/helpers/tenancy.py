@@ -23,34 +23,24 @@ class AccountScope:
 
     def get_queryset(self, model_cls: Type[Model]) -> Optional[QuerySet]:
         """
-        Retorna o queryset filtrado por tenant, quando aplicável.
+        Sempre restringe por tenant quando o model tiver FK de Account.
+        Se não houver request.account, não retorna nada (None).
+        Para o próprio Account, retorna apenas o request.account.
         """
-        user = getattr(self.request, "user", None)
-        is_super = bool(getattr(user, "is_superuser", False))
-
         if self.resolver.is_account_model(model_cls):
-            if is_super:
-                return model_cls.objects.all()
             if not self.account_id:
                 return None
             return model_cls.objects.filter(pk=self.account_id)
 
         account_field = self.resolver.find_account_fk_field(model_cls)
-        if not account_field:
-            return model_cls.objects.all() if is_super else None
+        if account_field:
+            if not self.account_id:
+                return None
+            return model_cls.objects.filter(**{f"{account_field}_id": self.account_id})
 
-        if is_super:
-            return model_cls.objects.all()
-
-        if not self.account_id:
-            return None
-
-        return model_cls.objects.filter(**{f"{account_field}_id": self.account_id})
+        return model_cls.objects.all()
 
     def ensure_account_on_instance(self, instance: Model, account_field: str):
-        """
-        Garante que a instância (create/update) tenha o tenant correto.
-        """
         if not self.account_id:
             raise PermissionDenied("Contexto de Account ausente em request.account.")
         setattr(instance, f"{account_field}_id", self.account_id)

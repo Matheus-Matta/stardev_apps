@@ -1,18 +1,23 @@
-import { ref, watchEffect } from "vue";
+import { ref } from 'vue'
 
-export const isDark = ref(false);
+const isDark = ref(false)
+
+function setDark(on) {
+  isDark.value = on
+  document.documentElement.classList.toggle('dark', on)
+  localStorage.setItem('ui.theme', on ? 'dark' : 'light')
+}
+
+export function initTheme() {
+  const saved = localStorage.getItem('ui.theme')
+  const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches
+  setDark(saved ? saved === 'dark' : prefers)
+}
 
 export function toggleTheme() {
-  isDark.value = !isDark.value;
-  applyTheme();
+  setDark(!isDark.value)
 }
 
-export function applyTheme() {
-  if (isDark.value) {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
+export function useTheme() {
+  return { isDark, toggleTheme, initTheme, setDark }
 }
-
-watchEffect(applyTheme);

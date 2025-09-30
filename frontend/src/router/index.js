@@ -6,17 +6,23 @@ import { isJwtExpired } from "../lib/jwt";
 import LoginView from "../views/LoginView.vue";
 
 const HomeView = () => import("../views/HomeView.vue");
-const SettingsView = () => import("../views/SettingsView.vue");
+const ProfileView = () => import("../views/ProfileView.vue");
+const AccountView = () => import("../views/page/Account.vue");
+const TableListView = () => import("../views/page/TableListView.vue");
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: "/", name: "home", component: HomeView, meta: { requiresAuth: true } },
     { path: "/login", name: "login", component: LoginView, meta: { public: true } },
-    { path: "/settings", name: "settings", component: SettingsView, meta: { requiresAuth: true } },
+    { path: "/profile", name: "settings", component: ProfileView, meta: { requiresAuth: true } },
+    { path: "/account", name: "account", component: AccountView, meta: { requiresAuth: true } },
+    { path: '/:model/list', name: 'list', component: TableListView, meta: { requiresAuth: true }},
 
-    // catch-all
-    { path: "/:pathMatch(.*)*", redirect: { name: "home" } },
+    {
+      path: "/:notFound(.*)",
+      redirect: { name: "home" },
+    },
   ],
 });
 

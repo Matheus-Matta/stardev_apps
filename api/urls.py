@@ -1,5 +1,9 @@
 from django.urls import path
-from .views import LoginView, LogoutView, VerifyView, GetView, PostView, PutView, DeleteView, ChangePasswordView, ListView
+from .views.crud import GetView, PostView, PutView, DeleteView, ListView
+from .views.actions import ActionView, ListActionsView
+from .views.auth.auth import LoginView, LogoutView, VerifyView
+from .views.auth.change_password import ChangePasswordView
+
 
 urlpatterns = [
     path("auth/login",  LoginView.as_view(),  name="auth_login"),
@@ -15,4 +19,8 @@ urlpatterns = [
     path("<str:model_name>/<uuid:pk>",        GetView.as_view(),  name="get"),
     path("<str:model_name>/<uuid:pk>/update", PutView.as_view(),  name="put"),
     path("<str:model_name>/<uuid:pk>/delete", DeleteView.as_view(), name="delete"),
+    
+    # ACTIONS MODELS    
+    path("<str:model_name>/action/<str:action_name>", ActionView.as_view(), name="run-action"),     
+    path("<str:model_name>/actions", ListActionsView.as_view(), name="get-actions"),   
 ]

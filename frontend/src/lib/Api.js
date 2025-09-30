@@ -2,7 +2,6 @@
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { toast } from "./toast";
-import { showFieldErrorByName } from "../forms/show-field-error";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 
@@ -10,7 +9,6 @@ function applyFieldError(field, msg) {
   if (!field || !msg) return;
   const name = String(field).trim();
   if (!name || name === "non_field_errors") return;
-  showFieldErrorByName(name, String(msg));
 }
 
 function dispatchFieldErrors(fieldPayload) {
@@ -45,18 +43,9 @@ function dispatchFieldErrors(fieldPayload) {
 
       if (Array.isArray(val)) {
         const messages = val
-          .map((v) => {
-            if (v && typeof v === "object" && "message" in v) {
-              return String(v.message);
-            }
-            if (typeof v === "string") return v;
-            return null;
-          })
+          .map((v) => (v && typeof v === "object" && "message" in v ? String(v.message) : typeof v === "string" ? v : null))
           .filter(Boolean);
-
-        if (messages.length) {
-          applyFieldError(field, messages.join(" "));
-        }
+        if (messages.length) applyFieldError(field, messages.join(" "));
         return;
       }
 
@@ -86,21 +75,38 @@ class Api {
     this.http.interceptors.response.use(
       (res) => {
         const status = res?.status ?? 200;
-        const method = res?.config?.method?.toUpperCase();
-        if (status >= 200 && status < 300 && method !== "GET") {
-          const msg = res?.data?.detail || "Operação concluída com sucesso.";
-          toast.success(msg);
+        const method = String(res?.config?.method || "").toUpperCase();
+
+        const silent =
+          res?.config?.toast === false ||
+          res?.config?.headers?.["X-Silent-Toast"] === "1";
+
+        if (status >= 200 && status < 300 && method !== "GET" && !silent) {
+          const title = "Resposta do servidor";
+          const msg =
+            res?.data?.detail ||
+            res?.data?.message ||
+            "Operação concluída com sucesso.";
+          toast.success(msg, { title });
         }
         return res;
       },
       (err) => {
         const data = err?.response?.data || {};
+        const title = "Ocorreu um erro.";
         const generalMsg =
           data?.detail ||
           data?.message ||
           err?.message ||
           "Ocorreu um erro.";
-        toast.error(generalMsg);
+
+        const silent =
+          err?.config?.toast === false ||
+          err?.config?.headers?.["X-Silent-Toast"] === "1";
+
+        if (!silent) {
+          toast.error(generalMsg, { title, duration: 6000 });
+        }
 
         try {
           const fieldPayload =

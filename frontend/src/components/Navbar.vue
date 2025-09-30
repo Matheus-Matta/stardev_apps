@@ -1,101 +1,159 @@
+<!-- src/components/Navbar.vue -->
 <template>
-  <nav class="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-    <div class="px-3 py-3 lg:px-5 lg:pl-3">
-      <div class="flex items-center justify-between">
-        <!-- Left: burger + brand -->
-        <div class="flex items-center justify-start rtl:justify-end gap-2">
-          <!-- mobile: open sidebar -->
-          <button
-            type="button"
-            @click="$emit('toggle-sidebar')"
-            class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none
-                   focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          >
-            <span class="sr-only">Open sidebar</span>
-            <svg class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"/>
-            </svg>
-          </button>
-
-          <NavBrand
-            :to="brand.to"
-            :logo="brand.logo"
-            :title="brand.title"
-            :alt="brand.alt"
+  <nav class="fixed top-0 z-50 w-full h-14 bg-zinc-900 border-b border-zinc-800 flex items-center">
+    <div class="w-full px-3 lg:px-4 container mx-auto">
+      <div class="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+        <!-- Esquerda: Brand -->
+        <RouterLink :to="brand.to" class="flex items-center gap-2 min-w-[120px] justify-self-start">
+          <img
+            v-if="brand.logo"
+            :src="brand.logo"
+            :alt="brand.alt || brand.title"
+            class="h-6 w-auto rounded-sm"
+            :key="brand.logo"
           />
-        </div>
-
-        <!-- Right: search (desktop) + user + search button (mobile) -->
-        <div class="flex items-center gap-2 md:gap-4">
-          <!-- Search desktop (fixa à esquerda do perfil) -->
-          <NavSearch
-            v-model="search"
-            placeholder="Search..."
-            wrapper-class="hidden md:block min-w-[220px]"
-          />
-
-          <!-- Mobile: botão da busca -->
-          <button
-            type="button"
-            class="md:hidden inline-flex items-center p-2 text-sm text-gray-500 rounded-lg hover:bg-gray-100
-                   focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400
-                   dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-            :aria-expanded="mobileSearchOpen ? 'true' : 'false'"
-            :aria-controls="mobileSearchId"
-            @click="mobileSearchOpen = !mobileSearchOpen"
+          <span v-else class="text-zinc-50 font-semibold text-lg">{{ brand.title }}</span>
+        </RouterLink>
+        <div class="relative flex items-center gap-2 min-w-[130px] justify-self-end">
+          <div class="justify-self-center w-full flex justify-center">
+              <div class="relative w-full max-w-3xl">
+                      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"></i>
+                      <InputText
+                        unstyled
+                        ref="searchRef"
+                        v-model="search"
+                        :placeholder="placeholder"
+                        class="w-full pl-10 pr-16 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-sm text-zinc-200
+                                   placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:border-zinc-600"
+                        aria-label="Buscar"
+                      />
+              </div>
+          </div>
+          <Button
+            text rounded class="!h-9 !w-9 hover:!bg-zinc-800"
+            @click="toggleNotifs"
+            aria-label="Notificações"
+                v-tooltip.bottom="{
+                value: 'notificações',
+                pt: { text: { class: '!bg-zinc-800' } },
+            }"
           >
-            <span class="sr-only">Open search</span>
-            <svg class="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-            </svg>
-          </button>
-          
-          <!-- Toggle de tema -->
-          <ThemeToggle />
-          
-          <!-- User menu -->
-          <UserMenu @logout="logout" />
-        </div>
-      </div>
+            <i class="pi pi-bell text-zinc-200"></i>
+            <Badge v-if="notifCount>0" :value="notifCount" severity="contrast" class="ml-2" />
+          </Button>
 
-      <!-- Mobile: campo de busca colapsável (abaixo do perfil) -->
-      <div :id="mobileSearchId" class="md:hidden mt-2" v-show="mobileSearchOpen">
-        <NavSearch v-model="search" placeholder="Search..." />
+          <Popover ref="notifPopover" unstyled class="rounded-xl bg-zinc-900 border border-zinc-800 shadow-lg">
+            <div class="p-3">
+              <div class="text-zinc-100 font-medium mb-2">Notificações</div>
+              <ul>
+                <li v-for="(n,i) in notifications" :key="i" class="text-sm text-zinc-300">• {{ n }}</li>
+                <li v-if="notifications.length===0" class="text-sm text-zinc-400">Sem notificações.</li>
+              </ul>
+            </div>
+          </Popover>
+
+          <!-- Theme toggle -->
+          <Button
+            text rounded class="!h-9 !w-9 hover:!bg-zinc-800"
+            @click="toggleTheme"
+                v-tooltip.bottom="{
+                value: isDark ? 'Modo claro' : 'Modo escuro',
+                pt: { text: { class: '!bg-zinc-800' } },
+            }"
+          >
+            <i :class="isDark ? 'pi pi-sun' : 'pi pi-moon'" class="text-zinc-200" />
+          </Button>
+
+          <!-- Alterar senha -->
+          <Button
+            text rounded class="!h-9 !w-9 hover:!bg-zinc-800"
+            @click="pwdDialog?.open()"
+                v-tooltip.bottom="{
+                value: 'Alterar senha',
+                pt: { text: { class: '!bg-zinc-800' } },
+            }"
+          >
+            <i class="pi pi-lock text-zinc-200" />
+          </Button>
+
+          <!-- Sair -->
+          <Button
+            text rounded class="!h-9 !w-9 hover:!bg-zinc-800"
+            @click="handleLogout"
+                v-tooltip.bottom="{
+                value: 'Sair',
+                pt: { text: { class: '!bg-zinc-800' } },
+            }"
+          >
+            <i class="pi pi-sign-out text-zinc-200" />
+          </Button>
+        </div>
       </div>
     </div>
+    <ChangePasswordDialog ref="pwdDialog" />
   </nav>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import NavBrand from "./nav/NavBrand.vue";
-import NavSearch from "./nav/NavSearch.vue";
-import ThemeToggle from "./nav/ThemeToggle.vue";
-import UserMenu from "./nav/UserMenu.vue";
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import ChangePasswordDialog from './dialog/ChangePasswordDialog.vue'
 
-import { useAuthStore } from "../store/auth";
-defineEmits(["toggle-sidebar"]);
+import { useStore } from '../store/index'
+import { useTheme } from '../lib/theme'
+const { isDark, toggleTheme, initTheme } = useTheme()
 
-const router = useRouter();
-const auth = useAuthStore();
+const props = defineProps({ placeholder: { type: String, default: 'Pesquisar' } })
+const router = useRouter()
 
-const search = ref("");
-const mobileSearchOpen = ref(false);
-const mobileSearchId = "navbar-mobile-search";
+const accountApi = useStore('account')
+const userApi    = useStore('user')
 
-const brand = {
-  to: "/",
-  logo: "https://flowbite.com/docs/images/logo.svg",
-  alt: "Starchats",
-  title: "Starchats",
-};
+const account = ref(null)
+const user    = ref(null)
+const pwdDialog = ref(null)
+const searchRef = ref(null)
+const search = ref('')
 
-const user = computed(() => auth.user || {});
-async function logout() {
-  await auth.logout();
-  router.push("/login");
+const notifications = ref([])
+const notifPopover = ref(null)
+const notifCount = computed(() => notifications.value.length)
+function toggleNotifs(e) { notifPopover.value?.toggle(e) }
+
+const logoSrc = computed(() => {
+  const src = account.value?.logo || ''
+  if (!src) return ''
+  const stamp = account.value?.updatedAt || 0
+  const sep = src.includes('?') ? '&' : '?'
+  return `${src}${sep}v=${stamp}`
+})
+
+const brand = computed(() => ({
+  to: '/',
+  logo: logoSrc.value,
+  title: account.value?.display_name || 'Minha Marca',
+  alt:   account.value?.display_name || 'Minha Marca'
+}))
+
+async function handleLogout() {
+  const { useAuthStore } = await import('../store/auth')
+  const auth = useAuthStore()
+  await auth.logout()
+  router.push('/login')
 }
+
+onMounted(async () => {
+  initTheme()
+  try {
+    const [acc, usr] = await Promise.all([
+      accountApi.get?.({ force: true }),
+      userApi.get?.({ force: true }),
+    ])
+    account.value = acc || account.value
+    user.value = usr || user.value
+  } catch (e) {
+    console.error('Navbar fetch error:', e)
+  }
+})
 </script>
+

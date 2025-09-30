@@ -17,12 +17,9 @@ export const useFilesStore = defineStore("files", {
       try {
         const fd = new FormData();
         fd.append("file", file);
-
-        // rota de create (ok)
         const resp = await api.post("api/files/add", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-
         const raw = unwrapData(resp);
         const item = raw?.file ?? raw?.files ?? raw;
         if (!item?.id) throw new Error("A API não retornou o ID do arquivo.");

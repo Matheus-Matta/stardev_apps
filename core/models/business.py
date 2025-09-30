@@ -29,7 +29,6 @@ class Business(models.Model):
     cnpj = models.CharField(max_length=18, unique=True)
 
     business_type = models.CharField(max_length=20, choices=BusinessType.choices)
-    address_json = models.JSONField(default=dict)
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)

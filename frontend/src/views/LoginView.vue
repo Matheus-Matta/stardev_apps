@@ -1,141 +1,84 @@
-<script setup lang="ts">
-import { ref, computed } from "vue";
-import { useAuthStore } from "../store/auth";
-import Input from "../components/ui/Input.vue";
-import Button from "../components/ui/Button.vue";
-import { useRoute } from "vue-router";
-import { FwbP } from 'flowbite-vue'
+<template>
+  <div class="min-h-[100dvh] flex items-center justify-center px-6 py-16">
+    <Card class="w-full max-w-[400px] shadow-sm">
+      <template #title>
+        <div class="text-center text-2xl font-semibold">
+          {{ t('common.welcomeBack') }}
+        </div>
+      </template>
 
-const route = useRoute();
-const auth = useAuthStore();
+      <template #content>
+        <div class="flex flex-col gap-6">
+          <SchemaForm
+            :schema="loginSchema"
+            :initial="initialValues"
+            :submitLabel="loading ? 'Signing in…' : 'Sign In'"
+            :loading="loading"
+            @submit="onSubmit"
+          >
+          </SchemaForm>
 
-const email = ref("");
-const password = ref("");
+          <div v-if="error" class="text-red-500 text-sm">
+            {{ error }}
+          </div>
+        </div>
+      </template>
+    </Card>
+  </div>
+</template>
+<script setup>
+import { computed } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 
-const errors = ref<{ email?: string; password?: string; general?: string }>({});
+import Card from 'primevue/card'
+import SchemaForm from '../components/forms/form.vue'
+import { useAuthStore } from '../store/auth'
 
-function isEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
+const { t } = useI18n()
 
-function validateEmail() {
-  if (!email.value.trim()) return "Email é obrigatório.";
-  if (!isEmail(email.value.trim())) return "Informe um email válido.";
-  return "";
-}
-function validatePassword() {
-  if (!password.value) return "Senha é obrigatória.";
-  if (password.value.length < 3) return "A senha deve ter pelo menos 3 caracteres.";
-  return "";
-}
+// --- Validadores com i18n
+const required = () => (v) =>
+  (v !== null && v !== undefined && String(v).trim() !== '') || t('forms.errors.required')
 
-function validateAll() {
-  errors.value = {
-    email: validateEmail() || undefined,
-    password: validatePassword() || undefined,
-    general: undefined,
-  };
-  return !errors.value.email && !errors.value.password;
-}
+const isEmail = () => (v) =>
+  (!v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v))) || t('forms.errors.email')
 
-const emailMessage = computed(() => errors.value.email || "");
-const emailType = computed(() => (errors.value.email ? "error" : "info"));
-const passwordMessage = computed(() => errors.value.password || "");
-const passwordType = computed(() => (errors.value.password ? "error" : "info"));
-const isFormValid = computed(() => {
-  return !validateEmail() && !validatePassword();
-});
+const minLen = (n) => (v) =>
+  (!v || String(v).length >= n) || t('forms.errors.minLength', { n })
 
-async function submit() {
-  errors.value.general = undefined;
+// --- Schema do formulário usando chaves de tradução
+const loginSchema = [
+  {
+    key: 'email',
+    type: 'text',
+    label: t('forms.email.label'),
+    placeholder: t('forms.email.placeholder'),
+    rules: [required(), isEmail()]
+  },
+  {
+    key: 'password',
+    type: 'password',
+    label: t('forms.password.label'),
+    placeholder: t('forms.password.placeholder'),
+    rules: [required(), minLen(3)]
+  },
+]
 
-  if (!validateAll()) {
-    return;
-  }
+const initialValues = { email: '', password: '', remember: false }
 
-  try {
-    const ok = await auth.login(email.value.trim(), password.value);
-    if (ok) {
-      const nextParam = route.query?.next;
-      const next =
-        typeof nextParam === "string" && nextParam.startsWith("/")
-          ? nextParam
-          : "/";
-      window.location.href = next;
-    } else {
-      errors.value.general = auth.error || "Não foi possível acessar. Tente novamente.";
-    }
-  } catch (e: any) {
-    errors.value.general =
-      e?.message || "Ocorreu um erro inesperado. Tente novamente.";
+// --- Auth flow
+const router = useRouter()
+const auth = useAuthStore()
+const { loading } = storeToRefs(auth)
+const error = computed(() => auth.error)
+
+const onSubmit = async (values) => {
+  if (loading.value) return
+  const ok = await auth.login(values.email, values.password)
+  if (ok) {
+    router.push({ path: '/' })
   }
 }
 </script>
-
-<template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-    <div class="w-full max-w-lg">
-      <!-- Título -->
-      
-      <!-- Card -->
-      <h1 class="text-3xl font-semibold text-center text-gray-900 dark:text-white mb-8">
-        Login
-      </h1>
-      <h2 class="text-xl font-semibold text-center text-gray-800 dark:text-gray-300 mb-8">
-        Seja bem-vindo!
-      </h2>
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
-        <form @submit.prevent="submit" class="space-y-5">
-          <!-- Email -->
-          <Input
-            v-model="email"
-            type="email"
-            label="Email"
-            leftIcon="mail"
-            placeholder="example@companyname.com"
-            :message="emailMessage"
-            :messageType="emailType"
-            autofocus
-            @enter="submit"
-          />
-
-          <!-- Password -->
-          <Input
-            v-model="password"
-            type="password"
-            label="Password"
-            leftIcon="lock"
-            placeholder="••••••••"
-            :message="passwordMessage"
-            :messageType="passwordType"
-            @enter="submit"
-          />
-
-          <!-- Error geral (backend/exception) -->
-          <p
-            v-if="errors.general || auth.error"
-            class="text-sm text-red-600 dark:text-red-500"
-          >
-            {{ errors.general || auth.error }}
-          </p>
-
-          <!-- Botão -->
-          <Button
-            :isLoading="auth.loading"
-            :disabled="auth.loading || !isFormValid"
-            type="submit"
-            label="Login"
-            color="blue"
-            variant="solid"
-            extraClass="w-full"
-            size="lg"
-            block
-          />
-        </form>
-        <fwb-p class="mt-6 text-sm text-gray-600 dark:text-gray-400 text-center">
-           Esqueceu sua senha? fale com o administrador.
-        </fwb-p>
-      </div>
-    </div>
-  </div>
-</template>
