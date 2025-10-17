@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
 from .account import Account
-from auditlog.registry import auditlog
+
 
 
 def files_upload_path(instance, filename):
@@ -73,5 +73,3 @@ class Files(models.Model):
     @property
     def url(self):
         return self.file.url if self.file else None
-
-auditlog.register(Files)

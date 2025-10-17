@@ -95,35 +95,39 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ChangePasswordDialog from './dialog/ChangePasswordDialog.vue'
 
-import { useStore } from '../store/index'
 import { useTheme } from '../lib/theme'
 const { isDark, toggleTheme, initTheme } = useTheme()
+
+import { useAccountStore } from '../store/auth/account'   
+import { useUserStore }    from '../store/auth/user'
+import { useAuthStore }    from '../store/auth/auth'
 
 const props = defineProps({ placeholder: { type: String, default: 'Pesquisar' } })
 const router = useRouter()
 
-const accountApi = useStore('account')
-const userApi    = useStore('user')
+const accountStore = useAccountStore()
+const userStore    = useUserStore()
+const authStore    = useAuthStore()
 
-const account = ref(null)
-const user    = ref(null)
+const account   = ref(null)
+const user      = ref(null)
 const pwdDialog = ref(null)
 const searchRef = ref(null)
-const search = ref('')
+const search    = ref('')
 
 const notifications = ref([])
-const notifPopover = ref(null)
-const notifCount = computed(() => notifications.value.length)
+const notifPopover  = ref(null)
+const notifCount    = computed(() => notifications.value.length)
 function toggleNotifs(e) { notifPopover.value?.toggle(e) }
 
 const logoSrc = computed(() => {
   const src = account.value?.logo || ''
   if (!src) return ''
-  const stamp = account.value?.updatedAt || 0
+  const stamp = accountStore.updatedAt || 0
   const sep = src.includes('?') ? '&' : '?'
   return `${src}${sep}v=${stamp}`
 })
@@ -136,24 +140,32 @@ const brand = computed(() => ({
 }))
 
 async function handleLogout() {
-  const { useAuthStore } = await import('../store/auth')
-  const auth = useAuthStore()
-  await auth.logout()
+  await authStore.logout()
   router.push('/login')
 }
 
 onMounted(async () => {
   initTheme()
+
+  userStore.fetch?.({ force: true })
+  accountStore.hydrate?.()
+  userStore.hydrate?.()
+
+  account.value = accountStore.account || account.value
+  user.value    = userStore.user       || user.value
+
   try {
     const [acc, usr] = await Promise.all([
-      accountApi.get?.({ force: true }),
-      userApi.get?.({ force: true }),
+      accountStore.fetch?.({ force: false }).catch(() => accountStore.account),
+      userStore.fetch?.({ force: false }).catch(() => userStore.user),
     ])
-    account.value = acc || account.value
-    user.value = usr || user.value
+    if (acc) account.value = acc
+    if (usr) user.value    = usr
   } catch (e) {
     console.error('Navbar fetch error:', e)
   }
 })
-</script>
 
+watch(() => accountStore.account, v => { account.value = v }, { immediate: true })
+watch(() => userStore.user,       v => { user.value    = v }, { immediate: true })
+</script>

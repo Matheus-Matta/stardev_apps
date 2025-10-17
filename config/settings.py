@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "auditlog", 
+    "simple_history",
     "drf_spectacular",
     "core",
     "api",
@@ -58,8 +59,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "auditlog.middleware.AuditlogMiddleware", 
     "django.contrib.messages.middleware.MessageMiddleware",
     "config.middleware.AccountResolverMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -209,3 +212,7 @@ SPECTACULAR_SETTINGS = {
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+
+AUDITLOG_INCLUDE_ALL_MODELS = True
+AUDITLOG_MASK_TRACKING_FIELDS = ("password", "api_key", "secret_token")

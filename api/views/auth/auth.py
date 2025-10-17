@@ -15,12 +15,12 @@ from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from django.contrib.auth import get_user_model
 
 from core.serialize import serialize_model
-
+from core.serializers import UserSerializer  
 
 class LoginView(TokenObtainPairView):
     """
     Espera: { "email": "...", "password": "..." }
-    Retorna: { "data": { "user": {...}, "account": {...}, "tokens": {...} }, "detail": "..." }
+    Retorna: { "user": {...}, "account": {...}, "tokens": {...}, "detail": "..." }
     """
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -49,6 +49,7 @@ class LoginView(TokenObtainPairView):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 
+            # emite os tokens (mantendo o fluxo atual por username+password)
             username_field = getattr(user, "USERNAME_FIELD", "username")
             ser = TokenObtainPairSerializer(data={
                 "username": getattr(user, username_field, None) or getattr(user, "username", ""),
@@ -57,13 +58,21 @@ class LoginView(TokenObtainPairView):
             ser.is_valid(raise_exception=True)
             tokens = ser.validated_data
 
-            user_data = serialize_model(user, request=request)
-            user_data['avatar_url'] = user.avatar_url or None
+            user_json = UserSerializer(user, context={"request": request}).data
+
             account = getattr(user, "Account", None)
-            account_data = serialize_model(account, request=request) if account else None
+            account_json = serialize_model(account, request=request) if account else None
 
             return Response(
-                {"user": user_data, "account": account_data, "tokens": tokens, "detail": "Autenticado com sucesso"},
+                {
+                    "user": user_json,
+                    "account": account_json,
+                    "tokens": {
+                        "access": str(tokens.get("access")),
+                        "refresh": str(tokens.get("refresh")),
+                    },
+                    "detail": "Autenticado com sucesso",
+                },
                 status=status.HTTP_200_OK
             )
 
@@ -76,8 +85,7 @@ class LoginView(TokenObtainPairView):
                 {"ok": False, "detail": "Erro ao autenticar."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-
+            
 class LogoutView(APIView):
     """
     Espera: { "refresh": "<refresh_token>" }

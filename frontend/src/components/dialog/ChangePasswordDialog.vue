@@ -134,7 +134,7 @@ import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import { useAuthStore } from '../../store/auth'
+import { useAuthStore } from '../../store/auth/auth'
 
 const visible = ref(false)
 const currentPassword = ref('')

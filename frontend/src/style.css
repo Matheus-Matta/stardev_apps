@@ -28,3 +28,22 @@
 body { font-family: 'Roboto', sans-serif; }
 
 
+@layer utilities {
+  .scrollbar-thin-zinc {
+    scrollbar-width: thin;                           
+    scrollbar-color: #cecece transparent;   
+  }
+
+  .dark .scrollbar-thin-zinc {
+    scrollbar-color: #4d4d4d transparent !important;   
+  }
+}
+
+.p-select-overlay .p-select-option[aria-selected="true"] {
+  background: var(--color-zinc-900) !important;
+  color:var(--color-zinc-50) !important;
+}
+.dark .p-select-overlay .p-select-option[aria-selected="true"] {
+  background: var(--color-zinc-200) !important;
+  color:var(--color-zinc-950) !important;
+}

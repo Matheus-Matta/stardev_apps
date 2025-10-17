@@ -13,7 +13,7 @@
     <main class="pt-[var(--header-h)]">
       <div class="grid grid-cols-[16rem_auto] gap-4 ">
         <AppSidebar/>
-        <div class="w-full overflow-auto ">
+        <div class="w-full overflow-auto">
           <slot />
         </div>
       </div>

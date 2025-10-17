@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'   // 👈 adiciona watch
 import PanelMenu from 'primevue/panelmenu'
-import { useUserStore } from '../store/user'
+import { useUserStore } from '../store/auth/user'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -29,7 +29,7 @@ const rawItems = ref([
     icon: 'pi pi-users',
     items: [
       { key: 'comercial-account', label: 'Conta', icon: 'pi pi-id-card', route: '/account', permission: 'view_account' },
-      { key: 'comercial-businesses', label: 'Empresas', icon: 'pi pi-briefcase', route: '/businesses/list', permission: 'view_business' }
+      { key: 'comercial-businesses', label: 'Empresas', icon: 'pi pi-briefcase', route: '/business/list', permission: 'view_business' }
     ]
   },
   {
@@ -38,6 +38,7 @@ const rawItems = ref([
     icon: 'pi pi-cog',
     items: [
       { key: 'settings-profile', label: 'Minha Conta', icon: 'pi pi-user', route: '/profile' },
+      { key: 'settings-businesstype', label: 'Tipos de Negócio', icon: 'pi pi-briefcase', route: '/businesstype/list', permission: 'view_businesstype' },
     ]
   },
 ])

@@ -3,8 +3,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.core.validators import URLValidator
-from auditlog.registry import auditlog
 from django.contrib.auth.models import Group
+from simple_history.models import HistoricalRecords
 
 class Account(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -16,8 +16,12 @@ class Account(models.Model):
     email_principal = models.EmailField(null=True, blank=True)
     phone_principal = models.CharField(max_length=32, null=True, blank=True)
     site_url = models.URLField(null=True, blank=True, validators=[URLValidator()])
-
-    logo_url = models.URLField(null=True, blank=True, help_text="URL do logo para UI/PDV.")
+    
+    history = HistoricalRecords()       
+    
+    logo_url = models.URLField(
+        null=True, blank=True, help_text="URL do logo para UI/PDV."
+    )
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
@@ -36,11 +40,13 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.display_name} ({self.slug})"
 
+
 class AccountGroup(models.Model):
     """
     Envolve o auth.Group e o amarra a um Account.
     Cada auth.Group pertence a exatamente 1 Account.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     account = models.ForeignKey(
@@ -51,7 +57,9 @@ class AccountGroup(models.Model):
     )
 
     name = models.CharField(max_length=150)
-
+    
+    history = HistoricalRecords()   
+    
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(default=timezone.now)
 
@@ -59,7 +67,9 @@ class AccountGroup(models.Model):
         verbose_name = "Account Group"
         verbose_name_plural = "Account Groups"
         constraints = [
-            models.UniqueConstraint(fields=["account", "name"], name="uniq_account_group_name"),
+            models.UniqueConstraint(
+                fields=["account", "name"], name="uniq_account_group_name"
+            ),
         ]
         indexes = [
             models.Index(fields=["account", "name"]),
@@ -86,11 +96,10 @@ class AccountGroup(models.Model):
         """
         full = f"{account.slug}:{name}"
         dj_group, _ = Group.objects.get_or_create(name=full)
-        obj, _ = cls.objects.get_or_create(account=account, group=dj_group, defaults={"name": name})
+        obj, _ = cls.objects.get_or_create(
+            account=account, group=dj_group, defaults={"name": name}
+        )
         if obj.name != name:
             obj.name = name
             obj.save(update_fields=["name"])
         return obj
-
-auditlog.register(AccountGroup)
-auditlog.register(Account)

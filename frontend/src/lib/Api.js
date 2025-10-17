@@ -1,9 +1,29 @@
 // src/lib/Api.js
 import axios from "axios";
-import { useAuthStore } from "../store/auth";
+import qs from "qs";
+import { useAuthStore } from "../store/auth/auth";
 import { toast } from "./toast";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+function cleanParams(obj) {
+  if (obj == null) return obj;
+  if (Array.isArray(obj)) {
+    const v = obj
+      .map(cleanParams)
+      .filter((x) => x !== null && x !== undefined && x !== "");
+    return v.length ? v : undefined;
+  }
+  if (typeof obj === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const cv = cleanParams(v);
+      if (cv !== null && cv !== undefined && cv !== "") out[k] = cv;
+    }
+    return Object.keys(out).length ? out : undefined;
+  }
+  return obj;
+}
 
 function applyFieldError(field, msg) {
   if (!field || !msg) return;
@@ -16,7 +36,6 @@ function dispatchFieldErrors(fieldPayload) {
 
   if (typeof fieldPayload === "string") {
     const str = fieldPayload;
-
     str.split(";").forEach((piece) => {
       const part = piece.trim();
       if (!part) return;
@@ -43,7 +62,13 @@ function dispatchFieldErrors(fieldPayload) {
 
       if (Array.isArray(val)) {
         const messages = val
-          .map((v) => (v && typeof v === "object" && "message" in v ? String(v.message) : typeof v === "string" ? v : null))
+          .map((v) =>
+            v && typeof v === "object" && "message" in v
+              ? String(v.message)
+              : typeof v === "string"
+              ? v
+              : null
+          )
           .filter(Boolean);
         if (messages.length) applyFieldError(field, messages.join(" "));
         return;
@@ -59,7 +84,17 @@ function dispatchFieldErrors(fieldPayload) {
 
 class Api {
   constructor() {
-    this.http = axios.create({ baseURL, withCredentials: false });
+    this.http = axios.create({
+      baseURL,
+      withCredentials: false,
+      paramsSerializer: {
+        serialize: (params) =>
+          qs.stringify(cleanParams(params) || {}, {
+            arrayFormat: "brackets", 
+            encodeValuesOnly: true, 
+          }),
+      },
+    });
 
     this.http.interceptors.request.use((config) => {
       const auth = useAuthStore();
@@ -68,6 +103,9 @@ class Api {
 
       const slug = auth?.user?.account?.slug || auth?.user?.Account?.slug;
       if (slug) config.headers["X-Account-Slug"] = slug;
+
+      // Se por acaso alguém setar config.params manualmente depois:
+      if (config.params) config.params = cleanParams(config.params);
 
       return config;
     });
@@ -95,10 +133,7 @@ class Api {
         const data = err?.response?.data || {};
         const title = "Ocorreu um erro.";
         const generalMsg =
-          data?.detail ||
-          data?.message ||
-          err?.message ||
-          "Ocorreu um erro.";
+          data?.detail || data?.message || err?.message || "Ocorreu um erro.";
 
         const silent =
           err?.config?.toast === false ||
@@ -110,24 +145,27 @@ class Api {
 
         try {
           const fieldPayload =
-            data.errors ||
-            data.field_errors ||
-            data?.data?.errors ||
-            null;
-
+            data.errors || data.field_errors || data?.data?.errors || null;
           dispatchFieldErrors(fieldPayload);
-        } catch (_) {
-        }
+        } catch (_) {}
 
         return Promise.reject(err);
       }
     );
   }
 
-  get(url, config)    { return this.http.get(url, config); }
-  post(url, body, c)  { return this.http.post(url, body, c); }
-  put(url, body, c)   { return this.http.put(url, body, c); }
-  delete(url, config) { return this.http.delete(url, config); }
+  get(url, config) {
+    return this.http.get(url, config);
+  }
+  post(url, body, c) {
+    return this.http.post(url, body, c);
+  }
+  put(url, body, c) {
+    return this.http.put(url, body, c);
+  }
+  delete(url, config) {
+    return this.http.delete(url, config);
+  }
 }
 
 const api = new Api();

@@ -12,7 +12,7 @@
           <SchemaForm
             :schema="loginSchema"
             :initial="initialValues"
-            :submitLabel="loading ? 'Signing in…' : 'Sign In'"
+            :submitLabel="loading ? 'Entrando…' : 'Entrar'"
             :loading="loading"
             @submit="onSubmit"
           >
@@ -33,8 +33,8 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import Card from 'primevue/card'
-import SchemaForm from '../components/forms/form.vue'
-import { useAuthStore } from '../store/auth'
+import SchemaForm from '../components/forms/LoginForm.vue'
+import { useAuthStore } from '../store/auth/auth'
 
 const { t } = useI18n()
 

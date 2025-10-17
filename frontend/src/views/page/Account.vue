@@ -1,80 +1,135 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
-import BaseView from '../../layout/BaseView.vue'
-import SchemaRenderer from '../../components/forms/SchemaRenderer.vue'
-import { accountSchema } from '../../forms/schemas/update/account'
-import { useStore } from '../../store/index'
+import { reactive, ref, onMounted } from "vue";
+import BaseView from "../../layout/BaseView.vue";
+import SchemaForm from "../../components/forms/SchemaForm.vue";
+import Button from "primevue/button";
+import { accountSchema } from "../../schemas/update/account";
+import { useAccountStore } from "../../store/auth/account";
+import { useUserStore } from "../../store/auth/user";
+import router from "../../router";
 
-const accountApi = useStore('account')
+const userStore = useUserStore();
+const accountStore = useAccountStore();
 
 const model = reactive({
-  slug: '',
-  legal_name: '',
-  display_name: '',
-  email_principal: '',
-  phone_principal: '',
-  site_url: '',
-  logo_url: ''
-})
+  id: null,
+  slug: "",
+  legal_name: "",
+  display_name: "",
+  email_principal: "",
+  phone_principal: "",
+  site_url: "",
+  logo_url: ""
+});
 
-const id = ref(null)
-const loading = ref(false)
-const error = ref(null)
-const saved = ref(false)
+const schemaRef = ref(null);
+const formKey = ref(0);     // força re-mount após hidratar
+const loading = ref(false);
+const isSubmitting = ref(false);
+const error = ref(null);
+const saved = ref(false);
+
+// Copia somente as chaves existentes no schema
+function assignFromSchemaKeys(schema, target, source) {
+  if (!schema?.sections) return;
+  for (const sec of schema.sections) {
+    for (const row of (sec.rows || [])) {
+      for (const f of (row.cols || [])) {
+        const k = f.key;
+        if (k in source && source[k] !== undefined) {
+          target[k] = source[k] ?? "";
+        }
+      }
+    }
+  }
+  if ("id" in source && source.id != null) target.id = source.id;
+}
 
 onMounted(async () => {
-  loading.value = true
+  const hasPermission = userStore.hasPermission('view_account');
+  if(!hasPermission) router.push('/home');
+
+  loading.value = true;
   try {
-    const acc = await accountApi.get({ force: true })
+    accountStore.hydrate?.();
+    const acc = await accountStore.fetch({ force: false }).catch(() => accountStore.account);
     if (acc) {
-      id.value = acc.id
-      Object.assign(model, {
-        slug: acc.slug || '',
-        legal_name: acc.legal_name || '',
-        display_name: acc.display_name || '',
-        email_principal: acc.email_principal || '',
-        phone_principal: acc.phone_principal || '',
-        site_url: acc.site_url || '',
-        logo_url: acc.logo_url || ''
-      })
+      assignFromSchemaKeys(accountSchema, model, acc);
+      formKey.value++; // garante valores iniciais nos inputs/masks
     }
   } catch (e) {
-    error.value = e?.message || 'Falha ao carregar'
+    error.value = e?.message || "Falha ao carregar conta";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
-function onSuccess() {
-  saved.value = true
-  setTimeout(() => (saved.value = false), 1500)
-}
-function onError(e) {
-  error.value = e?.message || 'Falha ao salvar'
+async function handleSubmit() {
+  if (!schemaRef.value) return;
+  isSubmitting.value = true;
+  error.value = null;
+
+  try {
+    // valida todas as seções
+    const ok = schemaRef.value.validateAll?.() ?? true;
+    if (!ok) { isSubmitting.value = false; return; }
+
+    // coleta payload achatado
+    const payload = schemaRef.value.collectAllPayload?.() || {};
+    await accountStore.update(payload); // seu store já usa o id interno
+    saved.value = true;
+    setTimeout(() => (saved.value = false), 1500);
+  } catch (e) {
+    error.value = e?.response?.data?.detail || e?.message || "Falha ao salvar conta";
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 </script>
 
 <template>
   <BaseView>
-    <div class="mx-auto">
-      <div class="flex my-4 mx-2 items-center gap-2">
-        <i :class="accountSchema.icon + ' text-2xl text-zinc-700 dark:text-zinc-200'"></i>
-        <h1 class="text-zinc-700 dark:text-zinc-200 font-semibold">{{ accountSchema.title }}</h1>
+    <div class="mx-auto flex">
+      <div class="flex-1 min-w-0">
+        <!-- Cabeçalho -->
+        <div class="w-full flex justify-between items-center px-2 mb-2">
+          <div class="flex my-4 mx-2 items-center gap-2">
+            <i :class="(accountSchema.icon || 'pi pi-briefcase') + ' text-2xl text-zinc-700 dark:text-zinc-200'"></i>
+            <h1 class="text-zinc-700 dark:text-zinc-200 font-semibold">
+              {{ accountSchema.title || (model.id ? 'Editar Conta' : 'Configurações da Conta') }}
+            </h1>
+          </div>
+          <div class="flex items-center gap-2">
+            <Button
+              :label="accountSchema.submitLabel || (model.id ? 'Salvar' : 'Criar')"
+              severity="contrast"
+              size="small"
+              raised
+              class="py-1 text-[12px]"
+              :pt="{ icon: 'text-[12px]' }"
+              :loading="isSubmitting"
+              :disabled="isSubmitting"
+              @click="handleSubmit"
+            />
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div class="h-[calc(93vh-var(--header-h)-var(--footer-h))] overflow-auto pr-2 scrollbar-thin-zinc">
+          <div v-if="loading" class="px-2 text-sm text-zinc-500">Carregando...</div>
+
+          <template v-else>
+            <SchemaForm
+              :key="formKey"
+              ref="schemaRef"
+              :schema="accountSchema"
+              v-model="model"
+              :loading="isSubmitting"
+              mode="update"
+            />
+          </template>
+        </div>
       </div>
-      <Card class="shadow-lg bg-transparent" :pt="{ body: { class: 'p-0' } }">
-        <template #content>
-          <SchemaRenderer
-            :schema="accountSchema"
-            v-model="model"
-            method="update"
-            :ids="{ account: id }"
-            :loading="loading"
-            :submit-label="accountSchema.submitLabel"
-            @success="onSuccess"
-            @error="onError"
-          />
-        </template>
-      </Card>
     </div>
   </BaseView>
 </template>

@@ -1,8 +1,6 @@
 import uuid
 from django.db import models
 from django.utils import timezone
-from auditlog.registry import auditlog
-
 from .account import Account
 from .business import Business
 from .address import Address
@@ -33,25 +31,21 @@ class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     Account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="customers")
 
-    # Identificação
     customer_type = models.CharField(max_length=10, choices=CustomerType.choices, default=CustomerType.PERSON)
     full_name = models.CharField(max_length=255)
     fantasy_name = models.CharField(max_length=255, blank=True, null=True)
-    document = models.CharField(max_length=32, blank=True, null=True)  # CPF/CNPJ (sem máscara)
+    document = models.CharField(max_length=32, blank=True, null=True) 
     state_registration = models.CharField(max_length=32, blank=True, null=True)
     municipal_registration = models.CharField(max_length=32, blank=True, null=True)
 
-    # Contatos básicos (campos “primários” opcionais para conveniência)
     primary_email = models.EmailField(blank=True, null=True)
     primary_phone = models.CharField(max_length=32, blank=True, null=True)
 
-    # ERP
     payment_term = models.CharField(max_length=10, choices=PaymentTerm.choices, default=PaymentTerm.CASH)
     credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_blocked = models.BooleanField(default=False)
     notes_erp = models.TextField(blank=True, null=True)
 
-    # PDV
     loyalty_code = models.CharField(max_length=64, blank=True, null=True, unique=True)
     preferred_store = models.ForeignKey(
         Business, on_delete=models.SET_NULL, null=True, blank=True, related_name="preferred_customers"
@@ -66,7 +60,6 @@ class Customer(models.Model):
     requires_scheduling = models.BooleanField(default=False)
     unloading_requirements = models.CharField(max_length=255, blank=True, null=True)
 
-    # RELACIONAMENTOS (M2M declarados na própria classe)
     addresses = models.ManyToManyField(
         Address,
         through="CustomerAddress",
@@ -107,8 +100,6 @@ class Customer(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.document or 'sem doc'})"
 
-auditlog.register(Customer)
-
 class CustomerAddress(models.Model):
     """
     Tabela 'through' do M2M Customer<->Address com metadados.
@@ -146,8 +137,6 @@ class CustomerAddress(models.Model):
     def __str__(self):
         return f"{self.customer} @ {self.address} [{self.role}]"
 
-auditlog.register(CustomerAddress)
-
 class CustomerContact(models.Model):
     """
     Tabela 'through' do M2M Customer<->Contact.
@@ -179,6 +168,3 @@ class CustomerContact(models.Model):
 
     def __str__(self):
         return f"{self.customer} ⇄ {self.contact} ({'primary' if self.is_primary else 'alt'})"
-
-
-auditlog.register(CustomerContact)

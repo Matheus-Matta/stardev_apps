@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from datetime import datetime, time
 from django.utils import timezone
 from django.core.exceptions import FieldDoesNotExist
-
+import re
+import json
 from .base import BaseModelView
 from api.helpers.filtering import parse_list_query, build_global_search_q
 
@@ -92,25 +93,9 @@ class DeleteView(BaseModelView):
         return self.exec_with_errors(_run)
 
 class ListView(BaseModelView):
-    def _plural_to_model(self, model_name_plural: str) -> str:
-        name = (model_name_plural or "").strip().lower()
-        if not name:
-            return ""
-        if name.endswith("ies"):
-            singular = name[:-3] + "y"
-        elif name.endswith("ses"):
-            singular = name[:-2]
-        elif name.endswith("es"):
-            singular = name[:-2]
-        elif name.endswith("s"):
-            singular = name[:-1]
-        else:
-            singular = name
-        return singular[:1].upper() + singular[1:]
 
-    def get(self, request, model_name_plural: str) -> Response:
+    def get(self, request, model_name: str) -> Response:
         helper = self.get_helper(request)
-        model_name = self._plural_to_model(model_name_plural)
 
         model_cls = helper.resolve_model(model_name)
         if not model_cls:
@@ -124,15 +109,40 @@ class ListView(BaseModelView):
         
         qs = helper.get_queryset(model_cls.__name__)
         if qs is None:
-            return self.ok({model_name_plural: [], "count": 0})
+            return self.ok({model_name: [], "count": 0})
         
-        # reforço: se tiver tenant_fk, filtre de novo por segurança       
+        def _extract_fields_spec(qp):
+            """
+            Constrói um dicionário a partir de keys do tipo:
+              fields[parent_id][op]=equal
+              fields[parent_id][value]=<uuid>
+            vira:
+              {"parent_id": {"op": "equal", "value": "<uuid>"}}
+            """
+            spec = {}
+            rx = re.compile(r'^fields\[(?P<field>[^\]])\]\[(?P<key>[^\]])\]$')
+            for k, v in qp.items():
+                m = rx.match(k)
+                if not m:
+                    continue
+                fld = m.group('field')
+                sub = m.group('key')
+                spec.setdefault(fld, {})[sub] = v
+            return spec
+
+        fields_spec = _extract_fields_spec(request.query_params)
+        if fields_spec:
+            print("\n[LIST] fields spec recebido:")
+            print(json.dumps(fields_spec, ensure_ascii=False, indent=2))
+        else:
+            print("\n[LIST] sem fields[...] na query (ou vazio).")
+
         account = getattr(request, "account", None)
         account_id = getattr(account, "id", None)
         account_field = helper.resolver.find_account_fk_field(model_cls)
         if account_field:
             if not account_id:
-                return self.ok({model_name_plural: [], "count": 0})
+                return self.ok({model_name: [], "count": 0})
             qs = qs.filter(**{f"{account_field}_id": account_id})
     
         allowed_fields = helper.get_serializer_fields(model_cls) or []
@@ -197,6 +207,6 @@ class ListView(BaseModelView):
 
         rows = []
         for obj in page:
-            data = helper.serialize_instance(model_cls.__name__, obj)  # << trocado
+            data = helper.serialize_instance(model_cls.__name__, obj)  
             rows.append({**(data.get("fields", {})), "id": data.get("id")})
-        return self.ok({model_name_plural: rows, "count": total})
+        return self.ok({'items': rows, "count": total})

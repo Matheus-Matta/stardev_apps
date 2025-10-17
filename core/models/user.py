@@ -5,7 +5,6 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from .account import Account  # o "Account"
 from .files import Files
-from auditlog.registry import auditlog
 from core.utils.normalize_url_media import normalize_url_media
 
 class User(AbstractUser):
@@ -44,5 +43,3 @@ class User(AbstractUser):
         file_field = getattr(self.avatar, "file", None) if getattr(self, "avatar", None) else None
         url = getattr(file_field, "url", None)
         return normalize_url_media(url)
-    
-auditlog.register(User)

@@ -3,7 +3,6 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from .account import Account   
-from auditlog.registry import auditlog
 
 class ModuleType(models.TextChoices):
     CORE = "CORE", "Recursos Básicos"
@@ -37,5 +36,3 @@ class AccountModule(models.Model):
 
     def __str__(self):
         return f"{self.account.slug}::{self.module}"
-
-auditlog.register(AccountModule)

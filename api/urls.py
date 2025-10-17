@@ -12,7 +12,7 @@ urlpatterns = [
     path("auth/change-password", ChangePasswordView.as_view(), name="auth-change-password"),
     
     # PLURAL: listagem com filtros
-    path("<str:model_name_plural>", ListView.as_view(), name="list"),
+    path("<str:model_name>/list", ListView.as_view(), name="list"),
 
     # CRUD unitário
     path("<str:model_name>/add",              PostView.as_view(), name="post"),

@@ -32,6 +32,8 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
+import ToggleSwitch from "primevue/toggleswitch";
+import ConfirmationService from 'primevue/confirmationservice'
 
 let installed = false
 export default {
@@ -68,5 +70,7 @@ export default {
     app.component('InputIcon', InputIcon)
     app.component('Select', Select)
     app.component('Checkbox', Checkbox)
+    app.component('ToggleSwitch', ToggleSwitch)
+    app.use(ConfirmationService)
   }
 }
